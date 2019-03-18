@@ -63,8 +63,20 @@ data %>%
 gtdMap <- joinCountryData2Map(data, nameJoinColumn="Country", 
                                joinCode="NAME")
 mapDevice('x11')
-mapCountryData(gtdMap, nameColumnToPlot="Net migration", 
-               catMethod='fixedWidth', numCats=100)
+mapParams <- mapCountryData(gtdMap, 
+               nameColumnToPlot="Net migration", 
+               catMethod=c(-30,-2,0,2,30), 
+               colourPalette = brewer.pal(9, 'Spectral'),
+               missingCountryCol = 'dark grey',
+               numCats=9,
+               oceanCol = 'light blue',
+               addLegend = FALSE)
+do.call( addMapLegend, c( mapParams
+                          , legendLabels='all'
+                          , legendWidth=0.5 ))
+mtext("Gris: aucune donnée", 
+      side = 1, 
+      line = -1)
 
 # Corrélation entre la migration et les autres vairables
 correlation <- cor(data[,c(-1,-2,-5)], data[,5])
