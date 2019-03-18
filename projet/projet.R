@@ -1,8 +1,7 @@
 library(readr)
 library(dplyr)
 library(ggplot2)
-library(gridExtra)
-library(grid)
+library(rworldmap)
 library(corrplot)
 
 # Chargement des données
@@ -35,10 +34,13 @@ data %>%
 
 
 # Solde migratoire moyen par région
-data %>%
-  select(Region, `Net migration`) %>%
+net_migration_per_region <- data %>%
+  select(Country, Region, `Net migration`) %>%
   group_by(Region) %>%
-  dplyr::summarize(Moyenne_migratoire=mean(`Net migration`)) %>%
+  dplyr::summarize(Moyenne_migratoire=round(mean(`Net migration`), 2))
+
+# histogramme
+net_migration_per_region %>%
   collect() %>%
   ggplot(aes(x=reorder(Region, desc(Moyenne_migratoire)))) +
   scale_fill_gradient2(low="purple", high="green") +
@@ -46,10 +48,27 @@ data %>%
   theme(axis.text.x=element_text(angle=90, hjust=1, vjust=0.5)) +
   geom_col(aes(x=Region, y=Moyenne_migratoire, fill=Moyenne_migratoire)) 
   
-  
+# Boîte à moustache
+data %>%
+  ggplot(aes(Region, `Net migration`)) +
+  theme(axis.text.x=element_text(angle=90, hjust=1, vjust=0.5)) +
+  geom_boxplot() +
+  stat_summary(fun.y=mean, colour="darkred", geom="point", 
+               shape=18, size=3) + 
+  geom_text(data = net_migration_per_region, 
+            aes(label = Moyenne_migratoire, y = Moyenne_migratoire))
+
+
+# world map
+gtdMap <- joinCountryData2Map(data, nameJoinColumn="Country", 
+                               joinCode="NAME")
+mapDevice('x11')
+mapCountryData(gtdMap, nameColumnToPlot="Net migration", 
+               catMethod='fixedWidth', numCats=100)
 
 # Corrélation entre la migration et les autres vairables
 correlation <- cor(data[,c(-1,-2,-5)], data[,5])
+correlation
 corrplot(correlation, type = 'full', cl.length = 9, cl.ratio = 1)
 
 
@@ -69,4 +88,4 @@ chisq.test(data$Region, data$`Net migration`)
 bartlett.test(data$`Net migration` ~ data$Region)
 
 # Test ANOVA
-oneway.test(data$`Net migration` ~ data$Region, var.equal = TRUE) 
+oneway.test(data$`Net migration` ~ data$Region, var.equal = FALSE) 
